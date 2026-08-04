@@ -34,20 +34,20 @@ Desarrollada por el **Laboratorio de Gobierno (GovLab)** de la Universidad de La
 
 ```
 Test_9ejes/
-├── index.html                  # Estructura de la app (landing, nombre, quiz, resultados, perfiles)
-├── app.js                      # Lógica principal + integración Supabase
-├── style.css                   # Estilos y diseño responsivo
-├── server.js                   # Servidor Express para uso local (Node.js)
-├── package.json                # Dependencias Node
-├── LICENSE                     # Licencia CC BY-NC 4.0
+├── index.html # Estructura de la app (landing, nombre, quiz, resultados, perfiles)
+├── app.js # Lógica principal + integración Supabase
+├── style.css # Estilos y diseño responsivo
+├── server.js # Servidor Express para uso local (Node.js)
+├── package.json # Dependencias Node
+├── LICENSE # Licencia CC BY-NC 4.0
 ├── README.md
-├── supabase_migration.sql      # Script de creación de tablas (v1)
-├── supabase_migration_v2.sql   # Script completo con datos (v2)
-├── supabase_rls_patch.sql      # Parche de políticas de seguridad (RLS)
-├── Candidatos/                 # Fotos de los 14 candidatos
-├── Partidos/                   # Logos de los partidos políticos
-├── Perfil/                     # Imágenes de perfil por tendencia ideológica
-└── Íconos/                     # Logos institucionales y portada para compartir
+├── supabase_migration.sql # Script de creación de tablas (v1)
+├── supabase_migration_v2.sql # Script completo con datos (v2)
+├── supabase_rls_patch.sql # Parche de políticas de seguridad (RLS)
+├── Candidatos/ # Fotos de los 14 candidatos
+├── Partidos/ # Logos de los partidos políticos
+├── Perfil/ # Imágenes de perfil por tendencia ideológica
+└── Íconos/ # Logos institucionales y portada para compartir
 ```
 
 ---
@@ -74,11 +74,11 @@ La app carga todos los datos dinámicamente desde Supabase al iniciar. No usa ar
 ```sql
 -- Guarda toda la sesión en una sola llamada transaccional
 SELECT submit_quiz_session(
-  p_user_agent,
-  p_location_hint,
-  p_responses,
-  p_user_scores,
-  p_results
+ p_user_agent,
+ p_location_hint,
+ p_responses,
+ p_user_scores,
+ p_results
 );
 ```
 
@@ -91,17 +91,17 @@ SELECT submit_quiz_session(
 
 ## Los 9 Ejes Ideológicos
 
-| # | Eje | Polo Negativo → Polo Positivo |
+| # | Eje | Polo Negativo Polo Positivo |
 |---|---|---|
-| 1 | Rol del Estado en la Economía | Libre mercado → Intervencionismo |
-| 2 | Política Fiscal | Austeridad → Gasto social |
-| 3 | Seguridad y Justicia | Mano dura → Enfoque social |
-| 4 | Política de Paz | Seguridad militar → Diálogo y paz total |
-| 5 | Medio Ambiente | Desarrollo extractivista → Transición ecológica |
-| 6 | Modelo Social | Conservadurismo → Progresismo |
-| 7 | Descentralización | Centralismo → Autonomía regional |
-| 8 | Política Exterior | Soberanía / aislamiento → Integración global |
-| 9 | Lucha contra la Corrupción | Institucionalismo → Reformismo radical |
+| 1 | Rol del Estado en la Economía | Libre mercado Intervencionismo |
+| 2 | Política Fiscal | Austeridad Gasto social |
+| 3 | Seguridad y Justicia | Mano dura Enfoque social |
+| 4 | Política de Paz | Seguridad militar Diálogo y paz total |
+| 5 | Medio Ambiente | Desarrollo extractivista Transición ecológica |
+| 6 | Modelo Social | Conservadurismo Progresismo |
+| 7 | Descentralización | Centralismo Autonomía regional |
+| 8 | Política Exterior | Soberanía / aislamiento Integración global |
+| 9 | Lucha contra la Corrupción | Institucionalismo Reformismo radical |
 
 ---
 
