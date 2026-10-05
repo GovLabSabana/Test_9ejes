@@ -15,7 +15,7 @@ Desarrollada por el **Laboratorio de Gobierno (GovLab)** de la Universidad de La
 - **Perfiles de Candidatos**: Visualización de la posición de cada candidato en los 9 ejes, con comparación directa frente a las respuestas del usuario, más biografía detallada y enlace a campaña oficial.
 - **Compartir Resultados**: Generación de imagen descargable con el top 3 de candidatos. Soporte para compartir en Twitter/X, Facebook, WhatsApp, Instagram y Web Share API (móvil nativo).
 - **Sección de Comentarios**: Al terminar el test, el usuario puede dejar comentarios o sugerencias de forma opcional (máx. 200 palabras).
-- **Persistencia de datos (Supabase)**: Cada respuesta se guarda automáticamente en PostgreSQL vía una función RPC (`submit_quiz_session`), incluyendo respuestas por pregunta, scores por eje, ranking de candidatos e ID de sesión para vincular comentarios.
+- **Persistencia de datos (PostgreSQL nativo en Railway)**: Cada respuesta se guarda automáticamente en PostgreSQL vía backend Express (`submit_quiz_session`), incluyendo respuestas por pregunta, scores por eje, ranking de candidatos e ID de sesión para vincular comentarios.
 - **Diseño Premium**: Glassmorphism, modo oscuro, animaciones fluidas y optimización móvil.
 
 ---
@@ -23,10 +23,10 @@ Desarrollada por el **Laboratorio de Gobierno (GovLab)** de la Universidad de La
 ## Tecnologías Utilizadas
 
 - **Frontend**: HTML5, CSS3 (Vanilla), JavaScript ES6+
-- **Base de datos**: [Supabase](https://supabase.com) (PostgreSQL) — REST API y RPC directa con `fetch()`
+- **Backend**: Node.js + Express (`server.js`) con cliente nativo `pg`
+- **Base de datos**: [PostgreSQL en Railway](https://railway.app) (o cualquier PostgreSQL estándar)
 - **Captura de imagen**: [html2canvas](https://html2canvas.hertzen.com/)
 - **Fuentes**: Google Fonts (Inter)
-- **Servidor local (opcional)**: Node.js + Express (`server.js`)
 
 ---
 
@@ -34,27 +34,42 @@ Desarrollada por el **Laboratorio de Gobierno (GovLab)** de la Universidad de La
 
 ```
 Test_9ejes/
-├── index.html # Estructura de la app (landing, nombre, quiz, resultados, perfiles)
-├── app.js # Lógica principal + integración Supabase
-├── style.css # Estilos y diseño responsivo
-├── server.js # Servidor Express para uso local (Node.js)
-├── package.json # Dependencias Node
-├── LICENSE # Licencia CC BY-NC 4.0
+├── index.html            # Estructura de la app (landing, nombre, quiz, resultados, perfiles)
+├── app.js                # Lógica del cliente y llamadas a la API de backend
+├── style.css             # Estilos y diseño responsivo
+├── server.js             # Servidor Express con endpoints REST y conexión a PostgreSQL
+├── migrate.js            # Script para ejecutar migraciones en PostgreSQL
+├── railway_schema.sql    # Esquema completo e inicialización de datos para Railway Postgres
+├── package.json          # Dependencias Node (express, pg, dotenv)
+├── LICENSE               # Licencia CC BY-NC 4.0
 ├── README.md
-├── supabase_migration.sql # Script de creación de tablas (v1)
-├── supabase_migration_v2.sql # Script completo con datos (v2)
-├── supabase_rls_patch.sql # Parche de políticas de seguridad (RLS)
-├── Candidatos/ # Fotos de los 14 candidatos
-├── Partidos/ # Logos de los partidos políticos
-├── Perfil/ # Imágenes de perfil por tendencia ideológica
-└── Íconos/ # Logos institucionales y portada para compartir
+├── Candidatos/           # Fotos de los candidatos
+├── Partidos/             # Logos de los partidos políticos
+├── Perfil/               # Imágenes de perfil por tendencia ideológica
+└── Íconos/               # Logos institucionales y portada para compartir
 ```
 
 ---
 
-## Base de Datos (Supabase)
+## Base de Datos (PostgreSQL en Railway)
 
-La app carga todos los datos dinámicamente desde Supabase al iniciar. No usa archivos JSON locales.
+La aplicación utiliza PostgreSQL nativo a través de un pool de conexiones en el backend (`server.js`).
+
+### Configuración en Railway (Paso a Paso)
+
+1. **Crear base de datos en Railway:**
+   - En tu proyecto de Railway, haz clic en **+ New** -> **Database** -> **Add PostgreSQL**.
+2. **Vincular variable de entorno:**
+   - Railway genera automáticamente la variable `DATABASE_URL`.
+   - Si la aplicación web y la base de datos están en el mismo proyecto de Railway, la aplicación ya tendrá acceso a `DATABASE_URL`.
+3. **Inicialización automática:**
+   - Al desplegar la aplicación, `server.js` detecta automáticamente si las tablas existen; si la base de datos está vacía, ejecuta de manera autónoma `railway_schema.sql` creando todas las tablas, índices, datos maestros y funciones RPC.
+4. **Ejecución manual (opcional):**
+   - También puedes correr el script de migración manualmente ejecutando:
+     ```bash
+     npm run migrate
+     ```
+   - O copiar el contenido de `railway_schema.sql` y pegarlo en el editor **Query** del servicio PostgreSQL en el dashboard de Railway.
 
 ### Tablas principales
 
@@ -65,27 +80,9 @@ La app carga todos los datos dinámicamente desde Supabase al iniciar. No usa ar
 | `candidates` | Perfil de cada candidato (nombre, partido, bio, URLs) |
 | `candidate_positions` | Posición de cada candidato en cada eje (score de -1 a 1) |
 | `sessions` | Sesión guardada por usuario (user agent, nombre, comentario) |
-| `session_responses` | Respuesta normalizada por pregunta por sesión |
-| `session_axis_scores` | Score promedio por eje por sesión |
-| `session_results` | Ranking final de candidatos por sesión |
-
-### Función RPC principal
-
-```sql
--- Guarda toda la sesión en una sola llamada transaccional
-SELECT submit_quiz_session(
- p_user_agent,
- p_location_hint,
- p_responses,
- p_user_scores,
- p_results
-);
-```
-
-> Para re-crear la base de datos, ejecutar los archivos `.sql` incluidos en el repositorio en el SQL Editor de Supabase, en este orden:
-> 1. `supabase_migration.sql`
-> 2. `supabase_migration_v2.sql`
-> 3. `supabase_rls_patch.sql`
+| `responses` | Respuesta normalizada por pregunta por sesión |
+| `user_axis_scores` | Score promedio por eje por sesión |
+| `results` | Ranking final de candidatos por sesión |
 
 ---
 

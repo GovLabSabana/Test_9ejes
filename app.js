@@ -1,7 +1,4 @@
-﻿// --- Supabase REST API ---
-const SUPABASE_URL = 'https://ppdrlciyiwdtryofzwtr.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_K0JYSb_ClMwtMqzRxvQkUg_SRJx0paW';
-
+// --- API Backend (PostgreSQL Nativo en Railway) ---
 let lastResponseId = null; // guarda el id de la última respuesta guardada
 
 const LIKERT_OPTIONS = [
@@ -31,11 +28,9 @@ async function saveResponse(answers, userScores, sortedCandidates) {
                 rank: i + 1
             }))
         };
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/submit_quiz_session`, {
+        const response = await fetch('/api/submit-quiz-session', {
             method: 'POST',
             headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(payload)
@@ -44,7 +39,7 @@ async function saveResponse(answers, userScores, sortedCandidates) {
         if (response.ok) {
             const data = await response.json();
             lastResponseId = data;
-            console.log('[Supabase] Respuesta guardada. ID:', lastResponseId);
+            console.log('[PostgreSQL] Respuesta guardada. ID:', lastResponseId);
             const btn = document.getElementById('feedback-submit-btn');
             if (btn) {
                 btn.disabled = false;
@@ -52,43 +47,38 @@ async function saveResponse(answers, userScores, sortedCandidates) {
             }
         } else {
             const errText = await response.text();
-            console.warn('[Supabase] Error al guardar:', response.status, errText);
+            console.warn('[PostgreSQL] Error al guardar:', response.status, errText);
             const btn = document.getElementById('feedback-submit-btn');
             if (btn) btn.textContent = 'No disponible';
         }
     } catch (e) {
-        console.warn('[Supabase] Error inesperado:', e);
+        console.warn('[PostgreSQL] Error inesperado:', e);
     }
 }
 
 async function saveComment(comment) {
     if (!lastResponseId) {
-        console.warn('[Supabase] No hay respuesta guardada a la que vincular el comentario.');
+        console.warn('[PostgreSQL] No hay respuesta guardada a la que vincular el comentario.');
         return false;
     }
     try {
-        const response = await fetch(
-            `${SUPABASE_URL}/rest/v1/rpc/save_session_comment`,
-            {
-                method: 'POST',
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    p_session_id: lastResponseId,
-                    p_comment: comment
-                })
-            }
-        );
+        const response = await fetch('/api/save-session-comment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                p_session_id: lastResponseId,
+                p_comment: comment
+            })
+        });
         return response.ok;
     } catch (e) {
-        console.warn('[Supabase] Error al guardar comentario:', e);
+        console.warn('[PostgreSQL] Error al guardar comentario:', e);
         return false;
     }
 }
-// --- Fin Supabase ---
+// --- Fin API Backend ---
 
 // --- Compartir resultados ---
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -320,56 +310,16 @@ const detailParty = document.getElementById('detail-party');
 const detailProfile = document.getElementById('detail-profile');
 const answersList = document.getElementById('answers-list');
 
-// Load data desde Supabase
+// Load data desde la API nativa de PostgreSQL
 async function init() {
     try {
-        const headers = {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`
-        };
+        const response = await fetch('/api/quiz-data');
+        if (!response.ok) throw new Error('Error al cargar datos del servidor');
 
-        const [axesRes, qRes, cRes] = await Promise.all([
-            fetch(`${SUPABASE_URL}/rest/v1/axes?select=id,name,pole_negative,pole_positive,weight&order=id`, { headers }),
-            fetch(`${SUPABASE_URL}/rest/v1/questions?select=id,axis_id,code,statement,pole_direction&order=id`, { headers }),
-            fetch(`${SUPABASE_URL}/rest/v1/candidates?select=id,name,party,profile,bio,campaign_url,photo_url,party_logo_url,profile_pic_url,candidate_positions(axis_id,score)&order=id`, { headers })
-        ]);
-
-        if (!axesRes.ok || !qRes.ok || !cRes.ok) throw new Error('Error al cargar datos de Supabase');
-
-        const [rawAxes, rawQuestions, rawCandidates] = await Promise.all([axesRes.json(), qRes.json(), cRes.json()]);
-
-        const axes = rawAxes.reduce((acc, ax) => {
-            acc[ax.id] = ax;
-            return acc;
-        }, {});
-
-        const questions = rawQuestions.map(q => ({
-            id: q.id,
-            axis_id: q.axis_id,
-            code: q.code,
-            text: q.statement,
-            pole_direction: q.pole_direction
-        }));
-
-        const candidates = rawCandidates.map(c => ({
-            id: c.id,
-            name: c.name,
-            party: c.party,
-            profile: c.profile,
-            description: c.bio,
-            campaignUrl: c.campaign_url,
-            photo: c.photo_url,
-            partyLogo: c.party_logo_url,
-            profilePic: c.profile_pic_url,
-            positions: Object.fromEntries(
-                (c.candidate_positions || []).map(p => [String(p.axis_id), p.score])
-            )
-        }));
-
-        quizData = { axes, questions, candidates };
-        console.log(`[Supabase] Datos cargados: ${questions.length} preguntas, ${candidates.length} candidatos`);
+        quizData = await response.json();
+        console.log(`[PostgreSQL] Datos cargados: ${quizData.questions.length} preguntas, ${quizData.candidates.length} candidatos`);
     } catch (error) {
-        console.error('[Supabase] Error cargando datos:', error);
+        console.error('[PostgreSQL] Error cargando datos:', error);
         alert('Error al cargar los datos. Por favor recarga la página.');
     }
 }
